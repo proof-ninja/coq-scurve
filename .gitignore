@@ -1,0 +1,10 @@
+theories/.*.aux
+theories/*.glob
+theories/*.vo
+theories/*.vok
+theories/*.vos
+
+.Makefile.d
+CoqMakefile.conf
+Makefile
+Makefile.conf
