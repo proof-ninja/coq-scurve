@@ -1,3 +1,4 @@
 -R theories scurve
 theories/PrimitiveSegment.v
 theories/Main.v
+theories/Reduction.v
