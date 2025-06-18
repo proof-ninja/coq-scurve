@@ -49,8 +49,18 @@ Proof.
     + apply IHls in Hin. destruct Hin as [ls1' [ls2' Heq]]. exists (a::ls1'), ls2'. rewrite Heq. reflexivity.
 Qed.
 
-Lemma last_app: forall {A:Type} (l r:list A) (d: A), (length r <> 0)%nat -> last r d = last (l ++ r) d.
-Admitted.
+Lemma last_app: forall [A:Type] (l r:list A) (d: A), r <> [] -> last r d = last (l ++ r) d.
+Proof.
+  intros A l r. revert l. induction r as [| a res IHr].
+  - intros l d Hcontra. contradiction.
+  - intros l d _. destruct res as [|a' res].
+    + simpl. rewrite last_last. reflexivity.
+    + assert(Heq: (l ++ a :: a' :: res) = ((l ++ [a]) ++ a' :: res )).
+      { rewrite <- app_assoc. simpl. reflexivity. }
+      rewrite Heq.
+      assert(Heq2: last (a :: a' :: res) d = last (a' :: res) d). reflexivity.
+      rewrite Heq2. apply IHr. discriminate.
+Qed.
 
 Lemma under_all_e_aux_2:
   forall (sc: scurve) (ls1 lse ls2 ls3: list Segment) (under segonx1: Segment) (x1 xh y1 yh yl: R),
@@ -130,9 +140,6 @@ Axiom end_e_close: forall sc l s1 le secx_seg swcc_seg lw s2 r s3 ler x y1 y2 ym
   y2 < ymid < y1 ->
   close ls.
 
-
-
-(* example2，途中まで *)
 Definition example2_list: list PrimitiveSegment :=
   [(n,e,cc);(n,e,cx);(s,e,cx);(s,w,cc);(n,w,cc);(n,e,cx);(n,e,cc)].
 Lemma example2_scurve : is_scurve example2_list.
