@@ -62,6 +62,14 @@ Inductive ReduceDirStep : list Direction -> list Direction -> Prop :=
     ReduceDirStep (l ++ ds ++ r) (l ++ ds' ++ r)
 .
 
+Lemma ReduceDirStep_length ds ds':
+  ReduceDirStep ds ds' -> length ds = (2 + length ds')%nat.
+Proof.
+  intros H.
+  induction H.
+  destruct H; simpl; repeat rewrite length_app, length_cons; repeat rewrite plus_n_Sm; reflexivity.
+Qed.
+
 Lemma rotation_difference_preservation_step:
   forall (ds ds': list Direction), ReduceDirStep ds ds' -> rotation_difference ds = rotation_difference ds'.
 Proof.
@@ -93,8 +101,6 @@ Proof.
   apply rotation_difference_preservation_step in H.
   rewrite H. now apply IHReduceDir.
 Qed.
-
-
 
 Notation have_common_reduce ds1 ds2 := (exists ds', ReduceDir ds1 ds' /\ ReduceDir ds2 ds').
 
