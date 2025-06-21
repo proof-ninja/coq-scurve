@@ -1,4 +1,5 @@
 Require Export List.
+Require Import Arith.
 Import ListNotations.
 
 Set Implicit Arguments.
@@ -20,3 +21,21 @@ Section Prefix.
 End Prefix.
 
 Hint Resolve Prefix_app : core.
+
+Fixpoint all_prefix {A:Set} (xs : list A) : list (list A) :=
+  match xs with
+  | [] => [[]]
+  | x::xs' =>
+      let ps := all_prefix xs' in
+      ps ++ map (fun ys => x :: ys) ps
+  end.
+
+Fixpoint all_sublists {A:Set} (xs: list A) : list (list A) :=
+  match xs with
+  | [] => [[]]
+  | x::xs' =>
+      map (fun ys => x :: ys) (all_prefix xs') ++ all_sublists xs'
+  end.
+
+Inductive sublist {A:Set} : list A -> list A -> Prop:=
+| SL l xs r: sublist xs (l ++ xs ++ r).
