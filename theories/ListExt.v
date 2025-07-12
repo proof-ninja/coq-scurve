@@ -13,11 +13,27 @@ Section Prefix.
   Lemma Prefix_app (pre r: list A) : Prefix pre (pre ++ r).
   Admitted.
 
+  Lemma Prefix_cons_iff a (pre xs: list A) : Prefix (a::pre) (a::xs) <-> Prefix pre xs.
+  Proof.
+    split.
+    - intros Precons. inversion Precons as [r eqr]. inversion eqr as [eqxs]. exact (Prefix_app pre r).
+    - intros Pre. inversion Pre as [r eqr]. subst. exact (Prefix_app (a::pre) r).
+  Qed.
+
   Lemma prefix_brothers_is_prefix (p1 p2 xs : list A) :
     Prefix p1 xs -> Prefix p2 xs ->
     Prefix p1 p2 \/ Prefix p2 p1.
-  Admitted.
-
+  Proof.
+    revert p2 xs. induction p1 as [|a p1 IHp].
+    - intros p2 xs _ _. left. exists p2. reflexivity.
+    - intros p2 xs Prep1 Prep2. destruct p2 as [|_a p2]; [right; now eexists|].
+      inversion Prep1 as [r1 eqxs1]. inversion Prep2 as [r2 eqxs2].
+      rewrite eqxs2 in eqxs1. inversion eqxs1 as [[_eqa eqr]]. subst.
+      repeat rewrite Prefix_cons_iff. eapply IHp.
+      + exact (Prefix_app p1 r1).
+      + rewrite <- eqr. exact (Prefix_app p2 r2).
+  Qed.
+  
   Fixpoint all_prefix (xs : list A) : list (list A) :=
     match xs with
     | [] => [[]]
