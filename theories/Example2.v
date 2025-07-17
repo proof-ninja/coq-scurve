@@ -4,7 +4,7 @@ Import ListNotations.
 Require Import PrimitiveSegment.
 Require Import ListExt.
 Require Import Main.
-From Stdlib Require Import Lra.
+Require Import Lra.
 
 Lemma x_consis: forall s1 s2, term s1 = init s2 -> term_x s1 = init_x s2.
 Proof.
@@ -45,6 +45,10 @@ Lemma have_same_point_app_close s1 s2 s ls1 ls2 p:
   close (ls1 ++ [s] ++ ls2).
 Admitted.
 
+Lemma pair_neq [A B: Type] (x1 x2: A) (y1 y2: B):
+  x1 <> x2 -> (x1, y1) <> (x2, y2).
+Admitted.
+
 (* under_all_eの弱いバージョン．underはx1, y1を通り，常に右を向いているlseの一番最後尾にx1がないといけない *)
 Axiom under_all_e_aux:
   forall (sc: scurve) (ls1 lse ls2 ls3: list Segment) (under: Segment) (x1 xh y1 yh yl: R),
@@ -55,7 +59,7 @@ Axiom under_all_e_aux:
   -> onExtendSegment ls (head_seg lse default_segment) (xh, yh)
   -> xh < x1 < term_x (last lse default_segment) /\ xh < term_x under < term_x (last lse default_segment)
   -> onExtendSegment ls (last lse default_segment) (x1, yl) /\ y1 < yl
-  -> close ls \/ exists (seg:Segment) (y2:R), In seg lse /\ onExtendSegment ls seg (term_x under, y2) /\ term_y under < y2.
+  -> close ls \/ exists (seg:Segment) (y2:R), In seg lse /\ onExtendSegment ls seg (term_x under, y2) /\ term_y under < y2 /\ term_x under < term_x seg.
 
 (* auxから少し使える範囲を増やした．
   ただし，underのtermは，x1があるlse上のセグメント(segonx1)のtermの右にいけない．（term_x under < term_x segonx1）
@@ -70,7 +74,7 @@ Lemma under_all_e_aux_2:
   -> xh < x1 < term_x (last lse default_segment) /\ xh < term_x under < term_x (last lse default_segment)
   -> In segonx1 lse /\ onExtendSegment ls segonx1 (x1, yl) /\ x1 < term_x segonx1 /\ y1 < yl
   -> term_x under < term_x segonx1
-  -> close ls \/ exists (seg:Segment) (y2:R), In seg lse /\ onExtendSegment ls seg (term_x under, y2) /\ term_y under < y2.
+  -> close ls \/ exists (seg:Segment) (y2:R), In seg lse /\ onExtendSegment ls seg (term_x under, y2) /\ term_y under < y2 /\ term_x under < term_x seg.
 Proof.
   intros sc ls1 lse ls2 ls3 under segonx1 x1 xh y1 yh yl ls Hembed Hh HonSegx1y1 HonSegxhyh [Hltx1 Hlttermx] Hsegonx1 Hlttermunder.
   destruct Hsegonx1 as [Hin Hsegonx1]. apply in_app_app in Hin as [lse1 [lse2 Heq]]. 
@@ -102,7 +106,7 @@ Qed.
 (* aux_2から先述の条件を減らしたもの
   現状，example2の証明で使用しているが，この部分はaux_2で十分なため，この公理は必要ないかもしれない
   また証明可能かどうかについても少し怪しい *)
-Axiom under_all_e:
+(* Axiom under_all_e:
   forall (sc: scurve) (ls1 lse ls2 ls3: list Segment) (under segonx1: Segment) (x1 xh y1 yh yl: R),
   let ls := (ls1 ++ lse ++ ls2 ++ (under :: ls3)) in
   embed_scurve sc ls ->
@@ -111,18 +115,97 @@ Axiom under_all_e:
   onExtendSegment ls (head_seg lse default_segment) (xh, yh) ->
   xh < x1 < term_x (last lse default_segment) /\ xh < term_x under < term_x (last lse default_segment) ->
   In segonx1 lse /\ onExtendSegment ls segonx1 (x1, yl) /\ x1 < term_x segonx1 /\ y1 < yl ->
-  close ls \/ exists (seg:Segment) (y2:R), In seg lse /\ onExtendSegment ls seg (term_x under, y2) /\ term_y under < y2 /\ term_x under < term_x seg.
+  close ls \/ exists (seg:Segment) (y2:R), In seg lse /\ onExtendSegment ls seg (term_x under, y2) /\ term_y under < y2 /\ term_x under < term_x seg. *)
 
-(* under_all_eをexample1~3に使いやすい形にした補題，証明は少し難しいかもしれないができると思う *)
+  (* under_all_eをexample3に使いやすい形にした補題，証明は少し難しいかもしれないができると思う *)
 Lemma all_e_swcc:
   forall (sc: scurve) (lse ls2: list Segment) (secx_seg swcc_seg: Segment),
   let ls := (lse ++ [secx_seg; swcc_seg] ++ ls2) in
   embed_scurve sc ls
   -> embed (s,e,cx) secx_seg /\ embed (s,w,cc) swcc_seg
   -> all_same_h (lse ++ [secx_seg]) e
-  -> embed (n,e,cc) (head_seg (lse ++ [secx_seg]) default_segment) \/ embed (n,e,cx) (head_seg (lse ++ [secx_seg]) default_segment)
+  -> embed (n,e,cc) (head_seg (lse ++ [secx_seg]) default_segment) (* \/ embed (n,e,cx) (head_seg (lse ++ [secx_seg]) default_segment) *)
   -> close ls \/ exists (seg:Segment) (y2:R), In seg (lse ++ [secx_seg]) /\ onExtendSegment ls seg (term_x swcc_seg, y2) /\ term_y swcc_seg < y2 /\ term_x swcc_seg < term_x seg.
-Admitted.
+Proof.
+  intros sc lse ls2 secx_seg swcc_seg ls Hembedsc [Hembed1 Hembed2] Halle Hembedhd.
+  assert(eqls: ls = ([] ++ (lse ++ [secx_seg]) ++ [] ++ swcc_seg::ls2)).
+  {
+    unfold ls. now rewrite <- app_assoc.
+  }
+  assert(_hd: swcc_seg = List.hd default_segment (swcc_seg :: ls2) ). { reflexivity. }
+  assert(Hconsis: term secx_seg = init swcc_seg).
+  {
+    erewrite <- last_last with (a:=secx_seg) (l:= lse). rewrite _hd. eapply consist_init_term.
+    - simpl. rewrite <- app_assoc. simpl. exact Hembedsc.
+    - destruct lse as [| a tail]; discriminate.
+    - discriminate.
+  }
+  clear _hd.
+  (* secxとswxxを繋ぐ点より少しだけ左の点xs2とswcc上のxs2を通る点(xs2, ys2) *)
+  assert (Heps: exists xs2 ys2: R, onExtendSegment ls swcc_seg (xs2, ys2) /\ init_x secx_seg < xs2 /\ term_x swcc_seg < xs2 < init_x swcc_seg /\ ys2 <= init_y swcc_seg).
+  {
+    eapply e_end_relation in Hembed1 as Hlt2. rewrite Hconsis in Hlt2. eapply w_end_relation in Hembed2 as Hlt3. apply Rexists_between in Hlt2 as [xs2' Hlt2]. apply Rexists_between in Hlt3 as [xs2'' Hlt3'].
+    set (xs2 := Rmax xs2' xs2'').
+    assert (Rmaxge : xs2' <= xs2 /\ xs2'' <= xs2). split;[now apply Rmax_l|now apply Rmax_r].
+    eapply w_exist_y_ex in Hembed2.
+    - destruct Hembed2 as [ys2 [HonSeg Hlty]]. exists xs2, ys2. split;[exact HonSeg| split;[| unfold term_x]]. unfold init_x. lra. split. Search Rmax. split. lra. apply Rmax_lub_lt;unfold init_x;now auto. lra.
+    - unfold ls. apply in_or_app. right. right;left;reflexivity.
+    - unfold ls. destruct lse;discriminate.
+    - lra. 
+    - apply Rlt_le. apply Rmax_lub_lt;unfold init_x;now auto.
+  }
+  destruct Heps as [xs2 [ys2 [onxs2ys2 Hlt]]].
+  (* swcx上を通る点(xs2, ys2over) *)
+  assert (onxs2over: exists ys2over : R, onExtendSegment ls secx_seg (xs2, ys2over) /\ term_y secx_seg <= ys2over <= init_y secx_seg).
+  {
+    eapply e_exist_y_ex with (ls:=ls) in Hembed1 as _H.
+    - now apply _H.
+    - unfold ls. apply in_or_app. right. now left.
+    - unfold ls. destruct lse; discriminate.
+    - unfold init_x in Hlt. apply Rlt_le. now apply Hlt.
+    - apply Rlt_le. rewrite Hconsis. unfold init_x in Hlt. now apply Hlt.
+  }
+  destruct onxs2over as [ys2over [onxs2over Hge]].
+  (* 十分左にあり，lseの先頭のセグメント上にある点(xh, yh) *)
+  assert(Hxh: exists xh yh, (onExtendSegment ls (head_seg (lse ++ [secx_seg]) default_segment) (xh, yh)) /\ xh < xs2 /\ xh < term_x swcc_seg).
+  {
+   set (xh:=Rmin (Rmin xs2 (term_x swcc_seg)) (term_x (head_seg (lse ++ [secx_seg]) default_segment)) - 1). 
+   eapply extended_segment_init_e_ncc in Hembedhd.
+   - destruct Hembedhd as [xhy [HonHead _]].
+     exists xh. eexists. repeat split.
+     + destruct lse; apply OnSegHead; eapply HonHead.
+     + unfold xh, Rmin. destruct (Rle_dec xs2 (term_x swcc_seg)), (Rle_dec xs2 (term_x swcc_seg));try lra. destruct (Rle_dec (term_x swcc_seg) (term_x (head_seg (lse ++ [secx_seg]) default_segment)));try lra.
+     + unfold xh, Rmin. destruct (Rle_dec xs2 (term_x swcc_seg)), (Rle_dec xs2 (term_x swcc_seg));try lra. destruct (Rle_dec (term_x swcc_seg) (term_x (head_seg (lse ++ [secx_seg]) default_segment)));try lra.
+   - exists 1. split. lra. erewrite <- surjective_pairing. reflexivity.
+   - change (fst (head_seg (lse ++ [secx_seg]) default_segment 1)) with (term_x (head_seg (lse ++ [secx_seg]) default_segment)).
+     unfold xh, Rmin. destruct (Rle_dec xs2 (term_x swcc_seg)), (Rle_dec xs2 (term_x swcc_seg));try lra. destruct (Rle_dec (term_x swcc_seg) (term_x (head_seg (lse ++ [secx_seg]) default_segment)));try lra.     
+  }
+  destruct Hxh as [xh [yh [onExxh [Hlt1 Hlt2]]]].
+  rewrite eqls.
+  destruct (Req_dec ys2 ys2over) as [eq | neq].
+  (* ys2 = ys2overの時はterm swcxと(xs2, ys2)の二点を通り，have_two_same_point_closeで示す *)
+  * left. eapply have_two_same_point_ex_close with (i:= length lse) (j:= (1 + length lse)%nat).
+    - apply Nat.neq_succ_diag_r.
+    - simpl. rewrite <- app_assoc. rewrite (nth_error_app2 lse ([secx_seg] ++ swcc_seg :: ls2) (le_n (length lse))). 
+      rewrite (Nat.sub_diag (length lse)). reflexivity.
+    - rewrite Nat.add_comm. simpl. rewrite Nat.add_comm. rewrite <- app_assoc. rewrite (nth_error_app2 lse ([secx_seg] ++ swcc_seg :: ls2) (Nat.le_add_l (length lse) 1)).
+      rewrite Nat.add_sub. reflexivity. 
+    - now apply (onTermEx ls secx_seg).
+    - exact onxs2over.
+    - rewrite Hconsis. now apply onInitEx.
+    - rewrite <- eq. now auto.
+    - rewrite Hconsis. rewrite (surjective_pairing (init swcc_seg)). change (fst (init swcc_seg)) with (init_x swcc_seg).
+      apply pair_neq. lra.
+  (* そうでない時はaux_2で証明 *)
+  * eapply under_all_e_aux_2;try rewrite <- eqls;try now eauto.
+    - rewrite last_last. apply x_consis in Hconsis. rewrite Hconsis. try lra.
+    - repeat split.
+      + apply in_or_app. right. now left.
+      + exact onxs2over.
+      + apply x_consis in Hconsis. lra.
+      + apply y_consis in Hconsis. lra.
+    - apply x_consis in Hconsis. rewrite Hconsis. eapply w_end_relation. exact Hembed2.
+Qed.
 
 (* 詳細はweeklyのhack.mdにて，証明は長そう． *)
 Lemma end_e_close: forall sc l s1 le secx_seg swcc_seg lw s2 r s3 ler x y1 y2 ymid,
@@ -218,7 +301,7 @@ Proof.
   {
     split;[|split; [|split]]; try now auto.
   }
-  eapply under_all_e in emb as Hclose; try now eauto; now try lra. clear _H inseg onseg Hlts4y2 Hlts4over _onExSegs5 xh yh _onxhyh Hlt _Hlts5s4s3.
+  eapply under_all_e_aux_2 in emb as Hclose; try now eauto; now try lra. clear _H inseg onseg Hlts4y2 Hlts4over _onExSegs5 xh yh _onxhyh Hlt _Hlts5s4s3.
   destruct Hclose as [Hclose | [overs5 [y3 [inseg5 [onseg5 [Hlts5y3 Hlts5overs5]]]]]]; try now auto.
   (* ここからend_e_closeを使う準備 *)
   assert(overs5_e: exists v c, embed (v, e, c) overs5).

@@ -210,8 +210,13 @@ Qed.
     * (一つまたはゼロ個の +) (一つ以上の連続する-の列) (一つまたはゼロ個の +)
     * またはその +と - を逆にしたもの
     *)
-Lemma tl_cannot_reduce : forall h tl, ~ CanReduceDirStep (h :: tl) -> ~ CanReduceDirStep tl.
-Admitted.
+Lemma tl_cannot_reduce h tl: ~ CanReduceDirStep (h :: tl) -> ~ CanReduceDirStep tl.
+Proof.
+  intros notreduce reduce.
+  apply notreduce. inversion reduce as [tl' HRDS]. inversion HRDS as [l r ds ds' HRule eq1 eq2].
+  exists ((h :: l) ++ ds' ++ r). rewrite app_comm_cons.
+  now auto.
+Qed.
 
 Lemma ReduceDir_reduced_form_PlusPlus l r:
   ~ CanReduceDirStep (l ++ [Plus;Plus] ++ r) -> r <> [] ->
@@ -345,7 +350,11 @@ Notation have_common_reduce ds1 ds2 := (exists ds', ReduceDir ds1 ds' /\ ReduceD
 Lemma non_overlap_reduction_confluence l c r ds1 ds2 ds1' ds2':
   Rule ds1 ds1' -> Rule ds2 ds2' ->
   have_common_reduce (l ++ ds1' ++ c ++ ds2 ++ r) (l ++ ds1 ++ c ++ ds2' ++ r).
-Admitted.
+Proof.
+  intros. exists (l ++ ds1' ++ c ++ ds2' ++ r). split.
+  - eapply RDTrans. rewrite app_assoc. rewrite app_assoc. apply RDS. now eauto. repeat (rewrite app_assoc; try now apply RDRefl).
+  - eapply RDTrans. apply RDS. now eauto. repeat (rewrite app_assoc; try now apply RDRefl).
+Qed.
 
 Lemma Rule_app_inv r1 r2 ds1l ds1r ds1 ds2 ds1' ds2': (* 14パターン列挙 *)
   ds1r <> [] -> ds1 = ds1l ++ ds1r ->
@@ -387,10 +396,16 @@ Qed.
 
 
 Lemma eq_have_common_reduce ds1 ds2: ds1 = ds2 -> have_common_reduce ds1 ds2.
-Admitted.
+Proof.
+  intros eq. subst. exists ds2. split; now apply RDRefl.
+Qed.
 
 Lemma ReduceDirStep_Reduce_dir ds ds': ReduceDirStep ds ds' -> ReduceDir ds ds'.
-Admitted.
+Proof.
+  intros HRDS. eapply RDTrans.
+  - exact HRDS.
+  - now apply RDRefl.
+Qed.
 
 Lemma ReduceDir_local_confluence_aux l1 r1 ds1 ds1' l2 r2 ds2 ds2':
   Rule ds1 ds1' ->
