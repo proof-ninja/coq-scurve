@@ -12,7 +12,6 @@ Proof.
   inversion RDS as [l r es es' HRule Hds Hds'].
   (* ds = l ++ es ++ r, ds' = l ++ es' ++ r である *)
   subst ds ds'.
-  (* 補題を適用 *)
   eapply AdmissibleDirs_sublist_rule; eauto.
 Qed.
 
@@ -23,9 +22,7 @@ Proof.
   - (* RDRefl: ds = ds なので自明 *)
     exact AD.
   - (* RDTrans: ds -> ds' -> ds'' の場合 *)
-    (* まず AdmissibleDirsStep_preserve を使って ds -> ds' の保存性を得る *)
     apply AdmissibleDirsStep_preserve with (ds := ds) in RDS; [|exact AD].
-    (* 次に帰納法の仮定を使って ds' -> ds'' の保存性を得る *)
     apply IHRD.
     exact RDS.
 Qed.
