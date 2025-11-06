@@ -1,9 +1,11 @@
 -R theories scurve
 theories/Dec.v
+theories/Embed.v
 theories/Eq.v
 theories/ListExt.v
 theories/PrimitiveSegment.v
-theories/Main.v
+theories/Segment.v
+theories/Example1.v
 theories/Example2.v
 theories/Example3.v
 theories/Reduction.v

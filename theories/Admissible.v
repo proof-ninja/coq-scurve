@@ -4,7 +4,7 @@ From Stdlib Require Import ZArith.
 Require Import PrimitiveSegment.
 Import ListNotations.
 Open Scope Z_scope.
-Require Import Lia.
+From Stdlib Require Import Lia.
 
 Definition all_admissibles :=
 [
