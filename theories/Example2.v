@@ -178,7 +178,7 @@ Proof.
      + unfold xh, Rmin. destruct (Rle_dec xs2 (term_x swcc_seg)), (Rle_dec xs2 (term_x swcc_seg));try lra. destruct (Rle_dec (term_x swcc_seg) (term_x (head_seg (lse ++ [secx_seg]) default_segment)));try lra.
      + unfold xh, Rmin. destruct (Rle_dec xs2 (term_x swcc_seg)), (Rle_dec xs2 (term_x swcc_seg));try lra. destruct (Rle_dec (term_x swcc_seg) (term_x (head_seg (lse ++ [secx_seg]) default_segment)));try lra.
    - exists 1. split. lra. erewrite <- surjective_pairing. reflexivity.
-   - change (fst (head_seg (lse ++ [secx_seg]) default_segment 1)) with (term_x (head_seg (lse ++ [secx_seg]) default_segment)).
+   - change (fst (point (head_seg (lse ++ [secx_seg]) default_segment) 1)) with (term_x (head_seg (lse ++ [secx_seg]) default_segment)).
      unfold xh, Rmin. destruct (Rle_dec xs2 (term_x swcc_seg)), (Rle_dec xs2 (term_x swcc_seg));try lra. destruct (Rle_dec (term_x swcc_seg) (term_x (head_seg (lse ++ [secx_seg]) default_segment)));try lra.     
   }
   destruct Hxh as [xh [yh [onExxh [Hlt1 Hlt2]]]].

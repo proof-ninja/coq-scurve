@@ -32,13 +32,13 @@ Definition derivable_dydx (f : R -> R * R) (pr : derivable_pair f): Set :=
   forall t: R, derivable_dydx_pt f t pr. *)
 
 
-Definition Segment := R -> R * R.
+Parameter Segment : Type.
+Parameter point : Segment -> R -> R * R.
 Parameter default_segment : Segment.
 
+Definition init (seg: Segment) : R * R := point seg 0.
 
-Definition init (seg: Segment) : R * R := seg 0.
-
-Definition term (seg: Segment) : R * R := seg 1.
+Definition term (seg: Segment) : R * R := point seg 1.
 
 Definition init_x (s: Segment) : R := fst (init s).
 Definition init_y (s: Segment) : R := snd (init s).
@@ -59,9 +59,9 @@ Lemma nth_head: forall (l:list Segment) (d: Segment), nth 0 l d = head_seg l d.
 
 
 (* セグメントの[0, 1]区間上にその座標があるかどうか *)
-Definition onSegment (seg: Segment) (rr : R * R) := exists (t:R), 0 <= t <= 1 /\ seg t = rr.
-Definition onHeadSegment (seg: Segment) (rr : R * R) := exists (t:R), t <= 1 /\ seg t = rr.
-Definition onLastSegment (seg: Segment) (rr : R * R) := exists (t:R), 0 <= t /\ seg t = rr.
+Definition onSegment (seg: Segment) (rr : R * R) := exists (t:R), 0 <= t <= 1 /\ point seg t = rr.
+Definition onHeadSegment (seg: Segment) (rr : R * R) := exists (t:R), t <= 1 /\ point seg t = rr.
+Definition onLastSegment (seg: Segment) (rr : R * R) := exists (t:R), 0 <= t /\ point seg t = rr.
 Inductive onExtendSegment : list Segment -> Segment -> R * R -> Prop :=
 | OnSegHead : forall (hds: Segment) (ls: list Segment) (rr: R*R),
     onHeadSegment hds rr
@@ -76,7 +76,7 @@ Inductive onExtendSegment : list Segment -> Segment -> R * R -> Prop :=
     -> onLastSegment (last ls default_segment) rr
     -> onExtendSegment ls (last ls default_segment) rr.
 
-Lemma ex_exists : forall (ls: list Segment) (seg: Segment) (rr : R * R), onExtendSegment ls seg rr -> exists (t:R), seg t = rr.
+Lemma ex_exists : forall (ls: list Segment) (seg: Segment) (rr : R * R), onExtendSegment ls seg rr -> exists (t:R), point seg t = rr.
 Proof.
   intros ls seg rr Honex. inversion Honex as [
     hds ls0 rr0 H0 H1 H2 H3 |
@@ -121,7 +121,7 @@ Admitted.
 
 Parameter extend : list Segment -> (R -> R * R).
 
-Definition close_extended (c: Segment):=
+Definition close_extended (c: R -> R * R):=
   exists (t1 t2: R), t1 <> t2 /\ c t1 = c t2.
 
 (* close, 閉 *)
