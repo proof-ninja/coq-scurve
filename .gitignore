@@ -8,3 +8,5 @@ theories/*.vos
 CoqMakefile.conf
 Makefile
 Makefile.conf
+
+*.cache

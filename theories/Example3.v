@@ -1,7 +1,8 @@
 From Stdlib Require Import Reals List.
 Import ListNotations.
 Require Import PrimitiveSegment.
-Require Import Main.
+Require Import Segment.
+Require Import Embed.
 
 Hint Resolve onInit onTerm neq_init_term : core.
 Hint Constructors is_scurve dc_pseg_hd dc: core.
