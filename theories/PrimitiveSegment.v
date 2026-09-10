@@ -78,3 +78,28 @@ Definition scurve : Set := { l: list PrimitiveSegment | is_scurve l }.
 (* 単位セグメントをscurveに連結 *)
 Definition connect (s: PrimitiveSegment) (lp: scurve) (A: dc_pseg_hd s (proj1_sig lp)) : scurve :=
 exist _ (s :: (proj1_sig lp)) (IsScurveCons s (proj1_sig lp) (proj2_sig lp) A).
+
+
+Parameter default_primitive_segment : PrimitiveSegment.
+Definition hd_scurve (sc: scurve) := hd default_primitive_segment (proj1_sig sc).
+
+Lemma one_pseg_is_scurve : forall (p: PrimitiveSegment), 
+	is_scurve [p].
+Proof. 
+	intros p. apply IsScurveCons.
+	- apply IsScurveNil.
+	- apply DcNil.
+Qed.
+	
+Definition scurve_from_one p := exist _ _ (one_pseg_is_scurve p).
+
+(* 単方向 scurve *)
+(* cf. Embed.all_same_h *)
+(* 空リストを含んでいない．（含めるなら，後の定理の必要な部分に not nil 制約を入れる．） *)
+Definition is_one_way_scurve (sc : scurve) : Prop :=
+	let lp := proj1_sig sc in
+	lp <> []
+	/\ (Forall (fun p => exists (v:V) (c:C), p = (v, e, c)) lp
+	\/ Forall (fun p => exists (v:V) (c:C), p = (v, w, c)) lp
+	\/ Forall (fun p => exists (h:H) (c:C), p = (n, h, c)) lp
+	\/ Forall (fun p => exists (h:H) (c:C), p = (s, h, c)) lp).

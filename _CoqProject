@@ -10,3 +10,7 @@ theories/Example2.v
 theories/Example3.v
 theories/Reduction.v
 theories/Admissible.v
+theories/SegmentsTranslation.v
+theories/Sparse.v
+theories/AdmissibilityPreservation.v
+theories/ConcreteExtend.v

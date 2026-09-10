@@ -1,5 +1,6 @@
 From Stdlib Require Export List.
 From Stdlib Require Import Arith.
+From Stdlib Require Import Lia.
 Require Import Dec.
 Import ListNotations.
 
@@ -202,3 +203,255 @@ Proof.
   - destruct xs; [reflexivity | discriminate].
   - rewrite H. reflexivity.
 Qed.
+
+
+
+Lemma hd_app : forall {A : Type} (a b : list A) (dummy : A),
+  a <> [] ->
+  hd dummy a = hd dummy (a ++ b).
+Proof.
+  intros A a b dummy H.
+  destruct a; firstorder.
+Qed.
+
+Lemma list_hd_tl : forall {A} (dummy: A) (l: list A),
+	l <> [] -> (hd dummy l) :: (tl l) = l.
+Proof. 
+	intros A dummy l H. 
+	induction l; firstorder.
+Qed.
+
+Lemma nth_error_hd : forall {A} (dummy: A) (l: list A) (x: A),
+	nth_error l 0 = Some x -> hd dummy l = x.
+Proof.
+	intros A dummy l x H. destruct l; simpl in *; congruence.
+Qed.
+
+Lemma nth_error_last : forall {A} (l: list A) (dummy: A),
+	l <> [] -> nth_error l (length l - 1) = Some (last l dummy).
+Proof.
+	induction l as [| a l' IH]; intros dummy Hne; [contradiction |].
+	destruct l' as [| b l''].
+	- reflexivity.
+	- change (length (a :: b :: l'')) with (S (length (b :: l''))).
+		assert (Hpos: length (b :: l'') <> 0) by (simpl; lia).
+		replace (S (length (b :: l'')) - 1) with (S (length (b :: l'') - 1)) by lia.
+		simpl nth_error.
+		change (last (a :: b :: l'') dummy) with (last (b :: l'') dummy).
+		apply IH. discriminate.
+Qed.
+
+Lemma list_map_hd : forall {A B} (dummy: A) (x: B) (l: list A) (l': list B) f,
+	List.map f l = x :: l' -> f (hd dummy l) = x.
+Proof. 
+	intros A B dummy x l l' f H.
+	induction l.
+	- discriminate.
+	- simpl in *. congruence. 
+Qed.
+
+Lemma app_split :
+  forall (A : Type) (l1 l2 l1' l2' : list A),
+  l1 ++ l2 = l1' ++ l2' ->
+  (exists a l, l1' = l1 ++ a :: l /\ l2 = a :: l ++ l2')
+	\/
+	(l1' = l1 /\ l2 = l2')
+  \/
+  (exists a l, l1 = l1' ++ a :: l /\ a :: l ++ l2 = l2').
+Proof.
+  intros A l1 l2 l1' l2' Heq.
+	apply app_eq_app in Heq.
+	destruct Heq as [l [[H1 H2] | [H1 H2]]].
+	- (* length l1 >= length l1' *)
+		destruct l as [ | x l'].
+		+ (* length l1 = length l1' *)
+			right; left. 
+			rewrite app_nil_r in H1. simpl in H2.
+			split; auto.
+		+ (* length l1 > length l1' *)
+			right; right.
+			exists x, l'.
+			split; auto.
+	- (* length l1 <= length l1' *)
+		destruct l as [ | x l'].
+		+ (* length l1 = length l1' *)
+			right; left. 
+			rewrite app_nil_r in H1. simpl in H2.
+			split; auto.
+		+ (* length l1 < length l1' *)
+			left.
+			exists x, l'.
+			split; auto.
+Qed.
+
+(** a と b がこの順でリストに入っている *)
+Definition In_order {A} (a b : A) (l : list A) : Prop :=
+  exists l1 l2 l3, l = l1 ++ a :: l2 ++ b :: l3.
+
+Lemma In_split_In_order : forall {A} (a b : A) l,
+	In a l 
+	-> In b l
+	-> a = b \/ In_order a b l \/ In_order b a l.
+Proof.
+	intros A a b l Ha Hb.
+	apply in_split in Ha.
+	destruct Ha as [la1 [la2 Ha]].
+	apply in_split in Hb.
+	destruct Hb as [lb1 [lb2 H]].
+	subst.
+	apply app_split in H.
+	destruct H as [[x [l' [_ H]]] | [[_ H] | [x [l' [H1 H2]]]]].
+	- right; left.
+		injection H. intros H1 _. subst.
+		exists la1, l', lb2. reflexivity.
+	- left. injection H. auto.
+  - repeat right.
+		injection H2. intros _ Hb. subst.
+		exists lb1, l', la2. 
+		rewrite <- app_assoc. f_equal.
+Qed.
+
+Lemma In_order_split : forall {A} (a b : A) l1 l2 l3,
+	In_order a b (l1 ++ l2 ++ l3)
+	-> In_order a b l2 (* a も b も l2 に入っている *)
+		\/ (In a l2 /\ In b l3) (* a のみ l2 に入っている *)
+		\/ (In a l1 /\ In b l2) (* b のみ l2 に入っている *)
+		\/ In_order a b (l1 ++ l3). (* a も b も l2 に入っていない *)
+Proof.
+	intros A a b l1 l2 l3 H.
+	destruct H as [l1' [l2' [l3' H]]].
+	(* a, b が l2 に入っているかどうかで場合分け *)
+	apply app_split in H.
+	destruct H as [[x [l [_ Ha_right]]] | [H | [x [l [Ha_l1 H]]]]].
+	- (* a が l2 ++ l3 に入っている場合１ *)
+		rewrite app_comm_cons in Ha_right. 
+		apply app_split in Ha_right.
+		destruct Ha_right as [[x' [l' [_ Ha_l3]]] | [[_ Ha_l3] | [x' [l' [Ha_l2 H]]]]].
+		+ (* a, b が l3 に入っている場合１ *)
+			right; right; right.
+			exists (l1 ++ x' :: l'), l2', l3'.
+			rewrite Ha_l3. rewrite <- app_assoc.
+			f_equal.
+		+ (* a, b が l3 に入っている場合２ *)
+			right; right; right.
+			exists l1, l2', l3'.
+			rewrite Ha_l3. 
+			f_equal.
+		+ (* a が l2 に入っている場合 *)
+			injection H. intros H1 Ha. subst.
+			apply app_split in H1.
+			destruct H1 as [[x'' [l'' [_ Hb_l3]]] | [[_ Hb_l3] | [x'' [l'' [Hb_l2 H1]]]]].
+			* (* b が l3 に入っている場合１ *)
+				right; left. subst. split; try apply in_elt; try apply in_cons.
+				apply in_elt.
+			* (* b が l3 に入っている場合２ *)
+				right; left. subst. split; try apply in_elt; apply in_eq.
+			* (* b が l2 に入っている場合 *)
+				left. injection H1. intros _ Hb. subst.
+				exists (x::l), l2', l''. reflexivity.
+	- (* a が l2 ++ l3 に入っている場合２ *)
+		destruct l2 as [ | x l]. 
+		+ (* a, b が l3 に入っている場合 *)
+			right; right; right.
+			destruct H as [H1 H2]. rewrite app_nil_l in H2.
+			subst.
+			exists l1, l2', l3'. reflexivity.
+		+ (* a が l2 に入っている場合 *)
+			destruct H as [H1 H2].
+			injection H2. intros H3 Ha. subst.
+			apply app_split in H3.
+			destruct H3 as [[x'' [l'' [_ Hb_l3]]] | [[_ Hb_l3] | [x'' [l'' [Hb_l2 H1]]]]].
+			* (* b が l3 に入っている場合１ *) 
+				right; left. subst. split; 
+				[apply in_eq | apply in_cons; apply in_elt].
+			* (* b が l3 に入っている場合２ *) 
+				right; left. subst. split; apply in_eq.
+			* (* b が l2 に入っている場合 *)
+				left. injection H1. intros _ Hb. subst.
+				exists [], l2', l''. reflexivity.
+	- (* a が l1 に入っている場合 *)
+		injection H. intros H1 Ha. subst.
+		apply app_split in H1.
+		destruct H1 as [[x' [l' [_ Hb_right]]] | [[_ Hb_right] | [x' [l' [Hb_l1 H1]]]]].
+		+ (* b が l2 ++ l3 に入っている場合１ *)
+			rewrite app_comm_cons in Hb_right. 
+			apply app_split in Hb_right.
+			destruct Hb_right as [[x'' [l'' [_ Hb_l3]]] | [[_ Hb_l3] | [x'' [l'' [Hb_l2 H1]]]]].
+			* (* b が l3 に入っている場合１ *)
+				repeat right. subst. exists l1', (l ++ x'' :: l''), l3'. 
+				rewrite <- app_assoc. f_equal. simpl. f_equal.
+				rewrite <- app_assoc. reflexivity.
+			* (* b が l3 に入っている場合２ *) 
+				repeat right. subst. exists l1', l, l3'.
+				rewrite <- app_assoc. reflexivity.
+			* (* b が l2 に入っている場合 *)
+				right; right; left. injection H1. intros _ Hb. subst.
+				split; apply in_elt.
+		+ (* b が l2 ++ l3 に入っている場合２ *)
+			destruct l2 as [ | x' l'].
+			* (* b が l3 に入っている場合 *)
+				repeat right.
+				rewrite app_nil_l in Hb_right. subst.
+				exists l1', l, l3'.
+				rewrite <- app_assoc. reflexivity.
+			* (* b が l2 に入っている場合 *)
+				right; right; left. injection Hb_right. intros _ Hb. subst.
+				split; [apply in_elt | apply in_eq].
+		+ (* b が l1 に入っている場合 *)
+			repeat right. injection H1. intros _ Hb. subst.
+			exists l1', l2', (l' ++ l3).
+			rewrite <- app_assoc. f_equal. 
+			simpl. f_equal.
+			rewrite <- app_assoc. f_equal.
+Qed.
+
+Lemma In_order_append_mid : forall {A} (a b : A) l1 l2 l3,
+	In_order a b (l1 ++ l3)
+	-> In_order a b (l1 ++ l2 ++ l3).
+Proof.
+	intros A a b l1 l2 l3 H.
+	destruct H as [l1' [l2' [l3' E]]].
+	(* a, b が l1 に入っているかどうかで場合分け *)
+	apply app_split in E.
+	destruct E as [[x [l [_ Ha_l3]]] | [[_ Ha_l3] | [x [l [Ha_l1 H]]]]].
+	- (* a が l3 に入っている場合１ *)
+		subst. 
+		exists (l1 ++ l2 ++ x :: l), l2', l3'.
+		rewrite <- app_assoc. f_equal.
+		rewrite <- app_assoc. f_equal.
+	- (* a が l3 に入っている場合２ *)
+		subst.
+		exists (l1 ++ l2), l2', l3'.
+		rewrite <- app_assoc. f_equal.
+	- (* a が l1 に入っている場合 *)
+		injection H. intros H1 Ha. subst.
+		apply app_split in H1.
+		destruct H1 as [[x' [l' [_ Hb_l3]]] | [[_ Hb_l3] | [x' [l' [Hb_l1 H1]]]]].
+		+ (* b が l3 に入っている場合１ *)
+			subst.
+			exists l1', (l ++ l2 ++ x' :: l'), l3'.
+			rewrite <- app_assoc. f_equal.
+			simpl. f_equal.
+			rewrite <- app_assoc. f_equal.
+			rewrite <- app_assoc. f_equal.
+		+ (* b が l3 に入っている場合２ *)
+			subst.
+			exists l1', (l ++ l2), l3'.
+			rewrite <- app_assoc. f_equal.
+			simpl. f_equal.
+			rewrite <- app_assoc. f_equal.
+		+ (* b が l1 に入っている場合 *)
+			injection H1. intros _ Hb. subst.
+			exists l1', l2', (l' ++ l2 ++ l3).
+			rewrite <- app_assoc. f_equal.
+			rewrite <- app_comm_cons. f_equal.
+			rewrite <- app_assoc. f_equal.
+Qed.
+
+Lemma In_order_nth : forall {A} n1 n2 a b (l : list A),
+	nth_error l n1 = Some a 
+	-> nth_error l n2 = Some b
+	-> n1 < n2
+	-> In_order a b l.
+Proof.
+Admitted.

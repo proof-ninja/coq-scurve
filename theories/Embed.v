@@ -13,10 +13,6 @@ Import ListNotations.
 Definition H := H.
 
 
-(* [0, 1]区間で連続かどうか，向きがPrimitiveSegmentの向きか，など *)
-Parameter embed : PrimitiveSegment -> Segment -> Prop.
-
-
 (* 始点と終点の位置関係を示す公理 *)
 Axiom n_end_relation: forall (s: Segment) (h: H) (c: C),
     embed (n, h, c) s -> snd (init s) < snd (term s).
@@ -39,6 +35,39 @@ Axiom e_onseg_relation: forall (s1: Segment) (v:V) (c:C) (x y: R),
 
 Axiom w_onseg_relation: forall (s1: Segment) (v:V) (c:C) (x y: R),
     embed (v, w, c) s1 -> onSegment s1 (x, y) -> fst (term s1) <= x /\ x <= fst (init s1).
+
+(* 一方向セグメントの延長部分は、始点・終点の外側へ同じ向きに延びる。 *)
+Axiom east_head_extension_bounds : forall seg v c p,
+	embed (v, e, c) seg -> onHead seg p ->
+	fst p <= fst (init seg).
+
+Axiom east_last_extension_bounds : forall seg v c p,
+	embed (v, e, c) seg -> onLast seg p ->
+	fst (term seg) <= fst p.
+
+Axiom west_head_extension_bounds : forall seg v c p,
+	embed (v, w, c) seg -> onHead seg p ->
+	fst (init seg) <= fst p.
+
+Axiom west_last_extension_bounds : forall seg v c p,
+	embed (v, w, c) seg -> onLast seg p ->
+	fst p <= fst (term seg).
+
+Axiom north_head_extension_bounds : forall seg h c p,
+	embed (n, h, c) seg -> onHead seg p ->
+	snd p <= snd (init seg).
+
+Axiom north_last_extension_bounds : forall seg h c p,
+	embed (n, h, c) seg -> onLast seg p ->
+	snd (term seg) <= snd p.
+
+Axiom south_head_extension_bounds : forall seg h c p,
+	embed (s, h, c) seg -> onHead seg p ->
+	snd (init seg) <= snd p.
+
+Axiom south_last_extension_bounds : forall seg h c p,
+	embed (s, h, c) seg -> onLast seg p ->
+	snd p <= snd (term seg).
 
 (* 始点と終点の間にあるx座標を取ると，そのx座標の点がセグメント上にあることを示す公理 *)
 Lemma e_exist_y s' v c x:

@@ -4,6 +4,9 @@ Require Import PrimitiveSegment.
 Import ListNotations.
 Open Scope Z_scope.
 Require Import Eq.
+From Stdlib Require Import Relations.Relation_Operators.
+From Stdlib Require Import Wellfounded.Transitive_Closure.
+From Stdlib Require Import Lia.
 
 (* 向き *)
 Inductive Direction : Set :=
@@ -26,6 +29,8 @@ match x with
 | (n, e, cx) | (s, e, cx) | (s, w, cc) | (n, w, cc) => Plus
 | (s ,w, cx) | (s, e, cc) | (n, e, cc) | (n, w, cx) => Minus
 end.
+
+Definition scurve_to_direction (s : scurve) := map orn (proj1_sig s).
 
 Definition rotation_difference (ds: list Direction) : Z :=
   fold_right Z.add 0 (map (fun d =>
@@ -142,9 +147,6 @@ Proof.
   split; [now rewrite head_eq, head_eq' | now rewrite last_eq, last_eq'].
 Qed.
 
-Definition Reduce (p p': list PrimitiveSegment): Prop :=
-  ReduceDir (map orn p) (map orn p').
-
 Definition rule_dec ds: {exists ds', Rule ds ds'} + {~ exists ds', Rule ds ds'}.
   refine (match ds with
           | [Plus; Minus; Plus] => left (ex_intro _ [Plus] _)
@@ -177,10 +179,10 @@ Proof.
 Qed.
 
 (**
- * 簡約の性質1: 強正規化性
- * 簡約は必ず停止する
+ * 簡約の性質0: 弱正規化性
+ * 簡約によって正規形に直すことができる
  *)
-Lemma termination : forall x, exists y, ReduceDir x y /\ ~ CanReduceDirStep y.
+Lemma weak_normalization : forall x, exists y, ReduceDir x y /\ ~ CanReduceDirStep y.
 Proof.
   apply (Nat.measure_induction _ (@List.length _)).
   intros x IHx.
@@ -189,6 +191,25 @@ Proof.
     + rewrite (ReduceDirStep_length x x'); auto with arith.
     + exists final. now split; [apply RDTrans with x' |].
   - exists x. now split; [constructor|].
+Qed.
+
+(**
+ * 簡約の性質1: 停止性（強正規化性）
+ * 簡約は停止する
+ *)
+Lemma termination_aux: well_founded (fun x y => ReduceDirStep y x).
+Proof.
+  apply (well_founded_lt_compat _ (@length Direction)).
+  intros x y Hreduce.
+  pose proof (ReduceDirStep_length _ _ Hreduce) as Hlen.
+  rewrite Hlen.
+  lia.
+Qed.
+
+Lemma termination: well_founded (clos_trans _ (fun x y => ReduceDirStep y x)).
+Proof.
+  apply wf_clos_trans.
+  apply termination_aux.
 Qed.
 
   (**

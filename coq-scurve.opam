@@ -10,6 +10,7 @@ dev-repo: "git+https://github.com/proof-ninja/coq-scurve"
 depends: [
   "rocq-prover"
   "rocq-equations"
+  "rocq-navi" {with-doc}
 ]
 
 authors: [
